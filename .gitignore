@@ -1,0 +1,19 @@
+# Move build output
+contracts/**/build/
+contracts/**/traces/
+contracts/**/*.trace
+contracts/**/.coverage*
+contracts/**/Pub.*.toml
+
+# Node
+app/node_modules/
+app/dist/
+
+# Local env
+.env
+.env.local
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -5,11 +5,13 @@
 /// evidence pointers, final receipt hashes, and validator attestations.
 module suiflow::agent_settlement;
 
+use std::bcs;
 use std::string::String;
 use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
 use sui::coin::{Self, Coin};
 use sui::event;
+use sui::hash;
 use sui::object::{Self, ID, UID};
 use sui::sui::SUI;
 use sui::transfer;
@@ -39,6 +41,15 @@ const E_POLICY_EXPIRED: u64 = 6;
 const E_BAD_SETTLEMENT: u64 = 7;
 const E_TOO_EARLY: u64 = 8;
 const E_BAD_VALIDATION: u64 = 9;
+const E_POLICY_ALLOWED: u64 = 10;
+
+const DENY_OK: u64 = 0;
+const DENY_REVOKED: u64 = 1;
+const DENY_WRONG_ORDER: u64 = 2;
+const DENY_WRONG_AGENT: u64 = 3;
+const DENY_ACTION_NOT_ALLOWED: u64 = 4;
+const DENY_EXPIRED: u64 = 5;
+const DENY_USAGE_EXHAUSTED: u64 = 6;
 
 public struct WorkOrder has key {
     id: UID,
@@ -73,6 +84,9 @@ public struct AgentPolicy has key, store {
     agent: address,
     allowed_actions: u64,
     expires_ms: u64,
+    max_uses: u64,
+    uses: u64,
+    max_provider_amount: u64,
     policy_hash: vector<u8>,
     revoked: bool
 }
@@ -96,6 +110,8 @@ public struct AgentPolicyIssued has copy, drop {
     agent: address,
     allowed_actions: u64,
     expires_ms: u64,
+    max_uses: u64,
+    max_provider_amount: u64,
     policy_hash: vector<u8>
 }
 
@@ -116,6 +132,17 @@ public struct ValidationSubmitted has copy, drop {
     evidence_hash: vector<u8>,
     validation_root: vector<u8>,
     validation_count: u64
+}
+
+public struct PolicyDenialRecorded has copy, drop {
+    work_order_id: ID,
+    policy_id: ID,
+    reporter: address,
+    agent: address,
+    attempted_action: u64,
+    reason_code: u64,
+    evidence_hash: vector<u8>,
+    observed_ms: u64
 }
 
 public fun create_work_order(
@@ -183,12 +210,15 @@ public fun issue_agent_policy(
     agent: address,
     allowed_actions: u64,
     expires_ms: u64,
+    max_uses: u64,
+    max_provider_amount: u64,
     policy_hash: vector<u8>,
     ctx: &mut TxContext
 ) {
     let sender = tx_context::sender(ctx);
     assert!(sender == order.payer || sender == order.provider, E_UNAUTHORIZED);
     assert!(allowed_actions > 0, E_BAD_POLICY);
+    assert!(max_uses > 0, E_BAD_POLICY);
 
     let id = object::new(ctx);
     let policy_id = object::uid_to_inner(&id);
@@ -200,6 +230,9 @@ public fun issue_agent_policy(
         agent,
         allowed_actions,
         expires_ms,
+        max_uses,
+        uses: 0,
+        max_provider_amount,
         policy_hash,
         revoked: false
     };
@@ -211,6 +244,8 @@ public fun issue_agent_policy(
         agent,
         allowed_actions,
         expires_ms,
+        max_uses,
+        max_provider_amount,
         policy_hash: policy.policy_hash
     });
 
@@ -251,7 +286,7 @@ public fun mark_delivered(
 
 public fun agent_mark_delivered(
     order: &mut WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     evidence_hash: vector<u8>,
     walrus_blob_id: vector<u8>,
     clock: &Clock,
@@ -268,7 +303,7 @@ public fun release(order: &mut WorkOrder, ctx: &mut TxContext) {
 
 public fun agent_release(
     order: &mut WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     clock: &Clock,
     ctx: &mut TxContext
 ) {
@@ -288,7 +323,7 @@ public fun request_refund(
 
 public fun agent_request_refund(
     order: &mut WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     dispute_evidence_hash: vector<u8>,
     clock: &Clock,
     ctx: &TxContext
@@ -349,7 +384,7 @@ public fun propose_split_settlement(
 
 public fun agent_propose_split_settlement(
     order: &mut WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     provider_amount: u64,
     evidence_hash: vector<u8>,
     clock: &Clock,
@@ -357,6 +392,7 @@ public fun agent_propose_split_settlement(
 ) {
     assert_agent_policy(order, policy, ACTION_PROPOSE_SETTLEMENT, clock, ctx);
     assert!(provider_amount <= order.amount, E_BAD_SETTLEMENT);
+    assert!(policy.max_provider_amount == 0 || provider_amount <= policy.max_provider_amount, E_BAD_SETTLEMENT);
     order.settlement_proposed_by = tx_context::sender(ctx);
     order.settlement_provider_amount = provider_amount;
     order.dispute_evidence_hash = evidence_hash;
@@ -381,13 +417,65 @@ public fun accept_split_settlement(order: &mut WorkOrder, ctx: &mut TxContext) {
 
 public fun agent_accept_split_settlement(
     order: &mut WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     clock: &Clock,
     ctx: &mut TxContext
 ) {
     assert_agent_policy(order, policy, ACTION_ACCEPT_SETTLEMENT, clock, ctx);
     assert!(order.settlement_proposed_by != @0x0, E_BAD_SETTLEMENT);
     do_accept_split_settlement(order, tx_context::sender(ctx), ctx);
+}
+
+public fun policy_status(
+    order: &WorkOrder,
+    policy: &AgentPolicy,
+    actor: address,
+    action: u64,
+    clock: &Clock
+): (bool, u64) {
+    if (policy.revoked) {
+        return (false, DENY_REVOKED)
+    };
+    if (policy.work_order_id != object::id(order)) {
+        return (false, DENY_WRONG_ORDER)
+    };
+    if (policy.agent != actor) {
+        return (false, DENY_WRONG_AGENT)
+    };
+    if ((policy.allowed_actions & action) != action) {
+        return (false, DENY_ACTION_NOT_ALLOWED)
+    };
+    if (policy.expires_ms != 0 && clock::timestamp_ms(clock) > policy.expires_ms) {
+        return (false, DENY_EXPIRED)
+    };
+    if (policy.uses >= policy.max_uses) {
+        return (false, DENY_USAGE_EXHAUSTED)
+    };
+    (true, DENY_OK)
+}
+
+public fun record_policy_denial(
+    order: &WorkOrder,
+    policy: &AgentPolicy,
+    attempted_action: u64,
+    evidence_hash: vector<u8>,
+    clock: &Clock,
+    ctx: &TxContext
+) {
+    let reporter = tx_context::sender(ctx);
+    let (allowed, reason_code) = policy_status(order, policy, reporter, attempted_action, clock);
+    assert!(!allowed, E_POLICY_ALLOWED);
+
+    event::emit(PolicyDenialRecorded {
+        work_order_id: object::id(order),
+        policy_id: object::id(policy),
+        reporter,
+        agent: policy.agent,
+        attempted_action,
+        reason_code,
+        evidence_hash,
+        observed_ms: clock::timestamp_ms(clock)
+    });
 }
 
 public fun submit_feedback(
@@ -460,6 +548,14 @@ public fun policy_action_release(): u64 { ACTION_RELEASE }
 public fun policy_action_request_refund(): u64 { ACTION_REQUEST_REFUND }
 public fun policy_action_propose_settlement(): u64 { ACTION_PROPOSE_SETTLEMENT }
 public fun policy_action_accept_settlement(): u64 { ACTION_ACCEPT_SETTLEMENT }
+
+public fun deny_reason_ok(): u64 { DENY_OK }
+public fun deny_reason_revoked(): u64 { DENY_REVOKED }
+public fun deny_reason_wrong_order(): u64 { DENY_WRONG_ORDER }
+public fun deny_reason_wrong_agent(): u64 { DENY_WRONG_AGENT }
+public fun deny_reason_action_not_allowed(): u64 { DENY_ACTION_NOT_ALLOWED }
+public fun deny_reason_expired(): u64 { DENY_EXPIRED }
+public fun deny_reason_usage_exhausted(): u64 { DENY_USAGE_EXHAUSTED }
 
 fun do_mark_delivered(
     order: &mut WorkOrder,
@@ -571,20 +667,32 @@ fun pay_all_bond(order: &mut WorkOrder, recipient: address, ctx: &mut TxContext)
 
 fun assert_agent_policy(
     order: &WorkOrder,
-    policy: &AgentPolicy,
+    policy: &mut AgentPolicy,
     action: u64,
     clock: &Clock,
     ctx: &TxContext
 ) {
-    assert!(!policy.revoked, E_BAD_POLICY);
-    assert!(policy.work_order_id == object::id(order), E_BAD_POLICY);
-    assert!(policy.agent == tx_context::sender(ctx), E_UNAUTHORIZED);
-    assert!((policy.allowed_actions & action) == action, E_BAD_POLICY);
-    assert!(policy.expires_ms == 0 || clock::timestamp_ms(clock) <= policy.expires_ms, E_POLICY_EXPIRED);
+    let (allowed, reason_code) = policy_status(order, policy, tx_context::sender(ctx), action, clock);
+    if (!allowed) {
+        if (reason_code == DENY_WRONG_AGENT) {
+            abort E_UNAUTHORIZED
+        };
+        if (reason_code == DENY_EXPIRED) {
+            abort E_POLICY_EXPIRED
+        };
+        abort E_BAD_POLICY
+    };
+    policy.uses = policy.uses + 1;
 }
 
 fun derive_receipt(order: &WorkOrder, label: vector<u8>): vector<u8> {
     let mut receipt = label;
+    vector::append(&mut receipt, bcs::to_bytes(&object::id(order)));
+    vector::append(&mut receipt, bcs::to_bytes(&order.payer));
+    vector::append(&mut receipt, bcs::to_bytes(&order.provider));
+    vector::append(&mut receipt, bcs::to_bytes(&order.amount));
+    vector::append(&mut receipt, bcs::to_bytes(&order.state));
+    vector::append(&mut receipt, bcs::to_bytes(&order.settlement_provider_amount));
     vector::append(&mut receipt, order.metadata_hash);
     vector::append(&mut receipt, order.mandate_hash);
     vector::append(&mut receipt, order.policy_hash);
@@ -592,7 +700,7 @@ fun derive_receipt(order: &WorkOrder, label: vector<u8>): vector<u8> {
     vector::append(&mut receipt, order.dispute_evidence_hash);
     vector::append(&mut receipt, order.walrus_blob_id);
     vector::append(&mut receipt, order.seal_policy_id);
-    receipt
+    hash::blake2b256(&receipt)
 }
 
 fun is_final(state: u8): bool {

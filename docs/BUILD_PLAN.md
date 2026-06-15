@@ -25,9 +25,10 @@
 1. Create funded work order.
 2. Issue agent policy.
 3. Agent marks delivery with Walrus evidence hash.
-4. Payer releases.
-5. Validator attests.
-6. Try using the same agent policy on another work order and show rejection.
+4. Try using the same policy again and show one-use exhaustion.
+5. Try using the same agent policy on another work order and record a denial receipt.
+6. Payer releases.
+7. Validator attests.
 
 ## User Inputs Needed Later
 

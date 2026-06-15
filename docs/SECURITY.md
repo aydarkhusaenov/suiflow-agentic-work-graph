@@ -4,15 +4,20 @@
 
 - Agent authority is object-bound. Delegated actions require an `AgentPolicy` object.
 - Every `AgentPolicy` is scoped to one `WorkOrder` through `work_order_id`.
-- Policies include exact allowed-action bitmasks and expiry timestamps.
+- Policies include exact allowed-action bitmasks, expiry timestamps, usage limits, and optional settlement caps.
+- Policy status can be checked without aborting, and invalid delegated attempts can be recorded as denial receipts.
 - A provider can post a service bond; missed-deadline refunds can slash that bond to the payer.
 - Final settlement moves escrow and bond balances out of the shared object, leaving no stranded active funds in finalized paths.
+- Final receipts are BLAKE2b digests over work-order ID, parties, amount, state, settlement amount, mandate/policy hashes, evidence hashes, Walrus blob ID, and Seal policy ID.
 
 ## Tested Security Properties
 
 - Clean release path returns escrow and service bond correctly.
 - Agent delivery requires a matching `AgentPolicy`.
 - A policy scoped to work order `A` cannot mutate work order `B`.
+- A one-use policy cannot be reused for a second delegated action.
+- A delegated split-settlement agent cannot propose a provider payout above its cap.
+- A wrong-order policy can be checked and recorded as a denial receipt without mutating funds.
 - Timeout refund works after the deadline and slashes the service bond.
 
 ## Known Gaps Before Submission

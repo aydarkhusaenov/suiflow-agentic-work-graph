@@ -14,11 +14,13 @@ SuiFlow is object-capability settlement for autonomous agents on Sui:
 
 - funded `WorkOrder` shared objects;
 - owned `AgentPolicy` capability objects;
+- one-use/usage-limited delegated agent actions;
+- denial receipts for invalid policy attempts;
 - SUI escrow and service bonds;
 - delivery/dispute evidence hashes;
 - Walrus blob IDs and Seal policy IDs;
 - release, timeout refund, and split-settlement paths;
-- receipt, feedback, and validator-attestation events.
+- BLAKE2b receipt, feedback, and validator-attestation events.
 
 ## Files Created
 
@@ -32,6 +34,7 @@ SuiFlow is object-capability settlement for autonomous agents on Sui:
 - `docs/BUILD_PLAN.md`
 - `docs/SUBMISSION_DRAFT.md`
 - `docs/SECURITY.md`
+- `docs/NOVELTY_AND_SCORECARD.md`
 - `docs/ONCHAIN.md`
 
 ## Verification
@@ -39,7 +42,7 @@ SuiFlow is object-capability settlement for autonomous agents on Sui:
 - Sui CLI installed with `suiup`.
 - Active Sui CLI used: `sui 1.73.1`.
 - `sui move build`: passed.
-- `sui move test`: `5` passed.
+- `sui move test`: `8` passed.
 - `npm run build` in `app`: passed.
 - `npm audit --omit=dev`: `0` vulnerabilities.
 

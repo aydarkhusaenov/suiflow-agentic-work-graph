@@ -16,6 +16,7 @@ const STATE_DELIVERED: u8 = 2;
 const STATE_RELEASED: u8 = 4;
 const STATE_REFUNDED: u8 = 5;
 const E_BAD_POLICY: u64 = 5;
+const E_BAD_SETTLEMENT: u64 = 7;
 
 #[test]
 fun policy_bit_constants_exist() {
@@ -24,6 +25,8 @@ fun policy_bit_constants_exist() {
     assert!(agent_settlement::policy_action_request_refund() == 4, 2);
     assert!(agent_settlement::policy_action_propose_settlement() == 8, 3);
     assert!(agent_settlement::policy_action_accept_settlement() == 16, 4);
+    assert!(agent_settlement::deny_reason_wrong_order() == 2, 5);
+    assert!(agent_settlement::deny_reason_usage_exhausted() == 6, 6);
 }
 
 #[test]
@@ -71,6 +74,8 @@ fun delegated_agent_can_mark_delivery_with_policy_object() {
             AGENT,
             agent_settlement::policy_action_mark_delivered(),
             9_000,
+            1,
+            0,
             b"agent-policy",
             scenario.ctx()
         );
@@ -80,10 +85,10 @@ fun delegated_agent_can_mark_delivery_with_policy_object() {
     scenario.next_tx(AGENT);
     {
         let mut order = scenario.take_shared<WorkOrder>();
-        let policy = scenario.take_from_sender<AgentPolicy>();
+        let mut policy = scenario.take_from_sender<AgentPolicy>();
         agent_settlement::agent_mark_delivered(
             &mut order,
-            &policy,
+            &mut policy,
             b"agent-delivery",
             b"walrus-agent-delivery",
             &clock,
@@ -143,6 +148,64 @@ fun agent_policy_cannot_control_a_different_work_order() {
             AGENT,
             agent_settlement::policy_action_mark_delivered(),
             9_000,
+            1,
+            0,
+            b"first-policy",
+            scenario.ctx()
+        );
+        test_scenario::return_shared(order);
+        id
+    };
+
+    create_demo_order(&mut scenario, &clock, 800, 10_000);
+
+    scenario.next_tx(PAYER);
+    let second_order_id = {
+        let order = scenario.take_shared<WorkOrder>();
+        let id = object::id(&order);
+        test_scenario::return_shared(order);
+        id
+    };
+
+    scenario.next_tx(AGENT);
+    {
+        let mut policy = scenario.take_from_sender<AgentPolicy>();
+        let mut second_order = scenario.take_shared_by_id<WorkOrder>(second_order_id);
+        assert!(first_order_id != second_order_id, 40);
+        agent_settlement::agent_mark_delivered(
+            &mut second_order,
+            &mut policy,
+            b"wrong-order",
+            b"walrus-wrong-order",
+            &clock,
+            scenario.ctx()
+        );
+        scenario.return_to_sender(policy);
+        test_scenario::return_shared(second_order);
+    };
+
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test]
+fun policy_status_exposes_wrong_order_without_abort() {
+    let mut scenario = test_scenario::begin(PAYER);
+    let clock = clock::create_for_testing(scenario.ctx());
+
+    create_demo_order(&mut scenario, &clock, 600, 10_000);
+
+    scenario.next_tx(PAYER);
+    let _first_order_id = {
+        let order = scenario.take_shared<WorkOrder>();
+        let id = object::id(&order);
+        agent_settlement::issue_agent_policy(
+            &order,
+            AGENT,
+            agent_settlement::policy_action_mark_delivered(),
+            9_000,
+            1,
+            0,
             b"first-policy",
             scenario.ctx()
         );
@@ -163,18 +226,119 @@ fun agent_policy_cannot_control_a_different_work_order() {
     scenario.next_tx(AGENT);
     {
         let policy = scenario.take_from_sender<AgentPolicy>();
-        let mut second_order = scenario.take_shared_by_id<WorkOrder>(second_order_id);
-        assert!(first_order_id != second_order_id, 40);
-        agent_settlement::agent_mark_delivered(
-            &mut second_order,
+        let second_order = scenario.take_shared_by_id<WorkOrder>(second_order_id);
+        let (allowed, reason) = agent_settlement::policy_status(
+            &second_order,
             &policy,
-            b"wrong-order",
-            b"walrus-wrong-order",
+            AGENT,
+            agent_settlement::policy_action_mark_delivered(),
+            &clock
+        );
+        assert!(!allowed, 50);
+        assert!(reason == agent_settlement::deny_reason_wrong_order(), 51);
+        agent_settlement::record_policy_denial(
+            &second_order,
+            &policy,
+            agent_settlement::policy_action_mark_delivered(),
+            b"denied-wrong-order",
             &clock,
             scenario.ctx()
         );
         scenario.return_to_sender(policy);
         test_scenario::return_shared(second_order);
+    };
+
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = E_BAD_POLICY, location = suiflow::agent_settlement)]
+fun one_shot_agent_policy_cannot_be_reused() {
+    let mut scenario = test_scenario::begin(PAYER);
+    let clock = clock::create_for_testing(scenario.ctx());
+
+    create_demo_order(&mut scenario, &clock, 700, 10_000);
+
+    scenario.next_tx(PAYER);
+    {
+        let order = scenario.take_shared<WorkOrder>();
+        agent_settlement::issue_agent_policy(
+            &order,
+            AGENT,
+            agent_settlement::policy_action_mark_delivered() | agent_settlement::policy_action_request_refund(),
+            9_000,
+            1,
+            0,
+            b"one-shot-policy",
+            scenario.ctx()
+        );
+        test_scenario::return_shared(order);
+    };
+
+    scenario.next_tx(AGENT);
+    {
+        let mut order = scenario.take_shared<WorkOrder>();
+        let mut policy = scenario.take_from_sender<AgentPolicy>();
+        agent_settlement::agent_mark_delivered(
+            &mut order,
+            &mut policy,
+            b"agent-delivery",
+            b"walrus-agent-delivery",
+            &clock,
+            scenario.ctx()
+        );
+        agent_settlement::agent_request_refund(
+            &mut order,
+            &mut policy,
+            b"second-use-denied",
+            &clock,
+            scenario.ctx()
+        );
+        scenario.return_to_sender(policy);
+        test_scenario::return_shared(order);
+    };
+
+    clock::destroy_for_testing(clock);
+    scenario.end();
+}
+
+#[test, expected_failure(abort_code = E_BAD_SETTLEMENT, location = suiflow::agent_settlement)]
+fun agent_split_settlement_respects_provider_amount_cap() {
+    let mut scenario = test_scenario::begin(PAYER);
+    let clock = clock::create_for_testing(scenario.ctx());
+
+    create_demo_order(&mut scenario, &clock, 1_000, 10_000);
+
+    scenario.next_tx(PAYER);
+    {
+        let order = scenario.take_shared<WorkOrder>();
+        agent_settlement::issue_agent_policy(
+            &order,
+            AGENT,
+            agent_settlement::policy_action_propose_settlement(),
+            9_000,
+            1,
+            400,
+            b"capped-settlement-policy",
+            scenario.ctx()
+        );
+        test_scenario::return_shared(order);
+    };
+
+    scenario.next_tx(AGENT);
+    {
+        let mut order = scenario.take_shared<WorkOrder>();
+        let mut policy = scenario.take_from_sender<AgentPolicy>();
+        agent_settlement::agent_propose_split_settlement(
+            &mut order,
+            &mut policy,
+            700,
+            b"over-cap",
+            &clock,
+            scenario.ctx()
+        );
+        scenario.return_to_sender(policy);
+        test_scenario::return_shared(order);
     };
 
     clock::destroy_for_testing(clock);

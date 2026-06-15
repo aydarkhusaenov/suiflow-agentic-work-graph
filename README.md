@@ -16,10 +16,11 @@ The core idea is simple: an agent should not be trusted with broad wallet author
 ## Why This Is Sui-Native
 
 - Each work engagement is a shared Sui object, not only a database row.
-- Agent authority is represented as an owned `AgentPolicy` object with one-order, one-action-surface limits.
+- Agent authority is represented as an owned `AgentPolicy` object with one-order, one-action-surface, usage-limit, expiry, and settlement-cap controls.
 - Escrow and service bonds are held as `Balance<SUI>` inside the work object.
 - Evidence and receipts are object fields that can point to Walrus blobs and Seal-encrypted evidence envelopes.
-- Final settlement emits events for receipt, feedback, and validator-attestation indexing.
+- Final settlement emits digest-bound receipt events for feedback and validator-attestation indexing.
+- Invalid delegated attempts can be recorded as non-aborting denial receipts, giving judges an auditable negative-evidence story.
 
 ## Current Workspace
 
@@ -50,6 +51,7 @@ The winning angle is not "escrow on another chain." The winning angle is object-
 4. Delivery/dispute evidence is stored as Walrus/Seal references.
 5. Settlement produces a portable receipt hash.
 6. Review and validation events turn final receipts into an agent reputation graph.
+7. Failed delegated actions produce denial receipts instead of silent off-chain logs.
 
 ## Submission Links To Fill
 

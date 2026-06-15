@@ -39,6 +39,9 @@ Technical sources:
 8. Final receipt hash composed from mandate, policy, evidence, and settlement outcome.
 9. Receipt-bound feedback events.
 10. Validator attestations that build a future agent reputation graph.
+11. Usage-limited policies, because persistent agent authority is a major practical risk.
+12. Denial receipts, because failed agent actions are negative evidence and should not live only in server logs.
+13. Settlement caps for delegated split offers, because agents should not be able to negotiate arbitrary payouts.
 
 ## Build Priority
 
@@ -47,11 +50,12 @@ P0:
 - Move package compiles. Done.
 - Create work order with funded SUI escrow.
 - Issue `AgentPolicy`.
+- Enforce one-use/usage-limited `AgentPolicy` objects.
 - Post service bond.
 - Mark delivered.
 - Release/refund/split-settle.
 - Emit receipt and validation events.
-- Scenario tests for release, delegated delivery, timeout refund, and mismatched policy rejection. Done.
+- Scenario tests for release, delegated delivery, timeout refund, mismatched policy rejection, policy denial status, one-use policy exhaustion, and delegated settlement-cap enforcement. Done.
 
 P1:
 
@@ -68,7 +72,7 @@ P2:
 ## Current Verification
 
 - `sui move build`: passed cleanly with Sui CLI `1.73.1`.
-- `sui move test`: `5` tests passed.
+- `sui move test`: `8` tests passed.
 - App `npm run build`: passed.
 - App production audit: `npm audit --omit=dev` found `0` vulnerabilities.
 - Full npm audit still reports a Vite/esbuild development-server advisory; it is not in production dependencies and should be fixed when the wallet SDK is wired with a newer Node/Vite stack.

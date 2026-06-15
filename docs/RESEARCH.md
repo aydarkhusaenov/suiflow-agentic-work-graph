@@ -26,6 +26,8 @@ Technical sources:
 - Sui programmable transaction blocks: https://docs.sui.io/develop/transactions/ptbs/prog-txn-blocks
 - Sui TypeScript SDK and dApp Kit: https://docs.sui.io/guides/developer/sui-101/client-tssdk
 - Walrus docs: https://docs.wal.app/
+- Object-capability security survey: https://arxiv.org/abs/1907.07154
+- Capability Myths Demolished: https://papers.agoric.com/assets/pdf/papers/capability-myths-demolished.pdf
 
 ## Novel Ideas To Implement
 

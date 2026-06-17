@@ -8,6 +8,8 @@
 - Package Explorer: https://suiexplorer.com/object/0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d?network=testnet
 - Publish tx: `3Q6ez9cNeUDYvnCGsEsT1LMpUX43Geh229Hzkx5ecMxn`
 - Publish Explorer: https://suiexplorer.com/txblock/3Q6ez9cNeUDYvnCGsEsT1LMpUX43Geh229Hzkx5ecMxn?network=testnet
+- GitHub: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
+- Demo site: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
 
 ## Short Description
 
@@ -27,8 +29,8 @@ The Sui Testnet package and demo transactions are live. Walrus/Seal/Nautilus/Sui
 
 ## Submit Sequence
 
-1. Push this folder to a public GitHub repository.
+1. Open the demo site. If it is still building, wait a few minutes and refresh.
 2. Add the GitHub repository link to the submission form.
-3. Host the frontend or paste the repository link if the form accepts an MVP/repository link.
+3. Add the demo site link to the submission form.
 4. Record a short demo video using the package Explorer link and the transactions in `docs/ONCHAIN.md`.
 5. Submit under Agentic Web.

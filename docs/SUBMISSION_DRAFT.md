@@ -55,8 +55,8 @@ Runbook unless installed and exercised: machine-checked Sui Prover output, live 
 
 ## Links
 
-- GitHub: fill after push
+- GitHub: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
 - Package ID: `0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d`
 - Package Explorer: https://suiexplorer.com/object/0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d?network=testnet
-- Demo site: fill after frontend run/host
+- Demo site: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
 - Video: fill after recording

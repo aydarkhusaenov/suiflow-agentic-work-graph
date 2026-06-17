@@ -16,6 +16,8 @@
 - Package Explorer: https://suiexplorer.com/object/0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d?network=testnet
 - Live demo trail with object IDs and transaction IDs is written in `docs/ONCHAIN.md`.
 - `app/.env` is set to the published package ID.
+- Public GitHub repo is live: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
+- Public frontend is configured through GitHub Pages: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
 - Core verification is green after the publishability refactor: `sui move build`, `sui move test` 36/36, frontend `npm run build`, `npm audit --omit=dev` with 0 vulnerabilities, and `git diff --check`.
 - The contract had to be refactored into nested WorkOrder state structs because Sui Testnet rejects structs above `max_fields_in_struct = 32`. The refactor preserved behavior and the full test suite still passes.
 - Windows mirror has been updated after the latest implementation pass.
@@ -116,7 +118,6 @@ SuiFlow is object-capability settlement for autonomous agents on Sui:
 
 ## Remaining User Steps
 
-1. Push the repository to a public GitHub URL.
-2. Start the app locally or host it publicly.
-3. Record the demo video using `docs/SUBMISSION_DRAFT.md`, `docs/ONCHAIN.md`, and `README SUBMIT STEPS - SUI.md`.
-4. Submit to Sui Overflow under Agentic Web.
+1. Wait a few minutes if GitHub Pages is still building.
+2. Record the demo video using `docs/SUBMISSION_DRAFT.md`, `docs/ONCHAIN.md`, and `README SUBMIT STEPS - SUI.md`.
+3. Submit to Sui Overflow under Agentic Web.

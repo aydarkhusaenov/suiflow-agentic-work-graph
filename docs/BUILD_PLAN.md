@@ -52,8 +52,8 @@
 
 ## Submission Day
 
-1. Push GitHub repo.
-2. Host or run the frontend and provide the URL required by the submission form.
+1. Wait a few minutes if GitHub Pages is still building.
+2. Record the demo video with Sui Explorer tabs visible.
 3. Submit under Agentic Web.
 4. Mention Walrus/Seal/Nautilus as implemented contract surfaces and be precise about which live services were exercised.
 5. Mention Sui Prover only if it was installed and run; otherwise describe formal verification as planned/runbook work.
@@ -81,9 +81,7 @@
 
 ## User Inputs Needed Later
 
-- GitHub repository name.
 - Optional Walrus/Seal CLI setup if we include live storage proof.
 - Optional Nautilus/off-chain Ed25519 signer for a successful live attested release.
 - Optional isolated critic service for a live off-chain critic receipt story.
 - Optional Sui Prover setup if we include formal verification output.
-- Public frontend hosting if the submission requires a website URL.

@@ -114,8 +114,8 @@ The winning angle is not "escrow on another chain." The winning angle is object-
 
 ## Submission Links To Fill
 
-- GitHub: fill after repo creation/push
+- GitHub: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
 - Sui package ID: `0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d`
-- Demo site: fill after deployment
+- Demo site: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
 - Demo video: fill after recording
 - X/social proof: fill after posting

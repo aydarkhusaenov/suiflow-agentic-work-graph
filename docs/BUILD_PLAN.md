@@ -53,7 +53,7 @@
 ## Submission Day
 
 1. Wait a few minutes if GitHub Pages is still building.
-2. Record the demo video with Sui Explorer tabs visible.
+2. Use the generated demo video at https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/suiflow-demo.webm
 3. Submit under Agentic Web.
 4. Mention Walrus/Seal/Nautilus as implemented contract surfaces and be precise about which live services were exercised.
 5. Mention Sui Prover only if it was installed and run; otherwise describe formal verification as planned/runbook work.

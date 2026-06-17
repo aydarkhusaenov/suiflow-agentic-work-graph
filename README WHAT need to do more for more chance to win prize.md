@@ -17,13 +17,13 @@ This file is the live checklist for the remaining work before submission.
 - Local frontend env is set in `app/.env`.
 - Public GitHub repo is live: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
 - Public frontend is configured through GitHub Pages: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
+- Demo video file is generated at `assets/suiflow-demo.webm` and published at https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/suiflow-demo.webm
 - Local verification: `sui move build` passes, `sui move test` passes 36/36, `npm run build` passes, and `npm audit --omit=dev` has 0 production vulnerabilities.
 
 ## Still Needed From User
 
 1. Wait a few minutes if GitHub Pages is still building.
-2. Record a short demo video with the app and Sui Explorer tabs visible.
-3. Submit under the Agentic Web track.
+2. Submit under the Agentic Web track.
 
 ## Optional Stronger Proofs
 

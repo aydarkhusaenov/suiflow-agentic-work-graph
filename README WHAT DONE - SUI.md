@@ -18,6 +18,7 @@
 - `app/.env` is set to the published package ID.
 - Public GitHub repo is live: https://github.com/aydarkhusaenov/suiflow-agentic-work-graph
 - Public frontend is configured through GitHub Pages: https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/
+- Demo video is generated at `assets/suiflow-demo.webm` and published at https://aydarkhusaenov.github.io/suiflow-agentic-work-graph/suiflow-demo.webm
 - Core verification is green after the publishability refactor: `sui move build`, `sui move test` 36/36, frontend `npm run build`, `npm audit --omit=dev` with 0 vulnerabilities, and `git diff --check`.
 - The contract had to be refactored into nested WorkOrder state structs because Sui Testnet rejects structs above `max_fields_in_struct = 32`. The refactor preserved behavior and the full test suite still passes.
 - Windows mirror has been updated after the latest implementation pass.
@@ -114,10 +115,9 @@ SuiFlow is object-capability settlement for autonomous agents on Sui:
 - Seal predicates are implemented; real Seal encryption/decryption must be exercised against the published package.
 - Formal spec artifact exists at `contracts/suiflow/specs/agent_settlement_formal_specs.move`; machine-checked Sui Prover output is not claimed because the local prover binary is not installed.
 - The compact live demo proves the highest-signal path: registry, execution binding, privacy, origin critic receipt, metered release, Walrus availability adapter, agent delivery, and final release. Broader Round 2/3 demo IDs for sealed-bid auctions, vault claims, exposure tickets, and bonded validation are optional extra proof if time remains.
-- Need demo video and submission.
+- Need final form submission.
 
 ## Remaining User Steps
 
 1. Wait a few minutes if GitHub Pages is still building.
-2. Record the demo video using `docs/SUBMISSION_DRAFT.md`, `docs/ONCHAIN.md`, and `README SUBMIT STEPS - SUI.md`.
-3. Submit to Sui Overflow under Agentic Web.
+2. Submit to Sui Overflow under Agentic Web.

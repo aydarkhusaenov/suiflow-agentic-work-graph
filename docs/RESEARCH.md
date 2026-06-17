@@ -74,7 +74,9 @@ P2:
 ## Current Verification
 
 - `sui move build`: passed cleanly with Sui CLI `1.73.1`.
-- `sui move test`: `8` tests passed.
+- `sui move test`: `36` tests passed.
 - App `npm run build`: passed.
 - App production audit: `npm audit --omit=dev` found `0` vulnerabilities.
-- Full npm audit still reports a Vite/esbuild development-server advisory; it is not in production dependencies and should be fixed when the wallet SDK is wired with a newer Node/Vite stack.
+- `npm audit --omit=dev`: `0` production vulnerabilities.
+- Sui Testnet package: `0x58f21090f31c0e5630f27ae0e802995cbc0c0984fb3ac8803398cfa602f1764d`.
+- Publish transaction: `3Q6ez9cNeUDYvnCGsEsT1LMpUX43Geh229Hzkx5ecMxn`.
